@@ -284,7 +284,6 @@ export const SIDEBAR_NAV_ITEMS: NavItem[] = [
     { label: 'Summary Report', view: 'summary-report', icon: ICONS.performance, roles: [Role.MANAGER] },
     { label: 'Day-End Report', view: 'daily-report', icon: ICONS.documentReport, roles: [Role.MANAGER] },
     { label: 'Promise Dashboard', view: 'promise-dashboard', icon: ICONS.calendar, roles: [Role.MANAGER] },
-    { label: 'Commission Report', view: 'commission', icon: ICONS.recovered, roles: [Role.MANAGER] },
     { label: 'Analytics', view: '', isHeading: true, roles: [Role.MANAGER] },
     { label: 'AI Insights', view: 'ai-insights', icon: ICONS.performance, roles: [Role.MANAGER] },
     { label: 'Portfolio Intelligence', view: 'portfolio-intelligence', icon: ICONS.filter, roles: [Role.MANAGER] },
