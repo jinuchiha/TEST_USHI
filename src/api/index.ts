@@ -1,0 +1,14 @@
+export { apiClient, ApiError } from './client';
+export { authApi } from './auth.api';
+export { usersApi } from './users.api';
+export { casesApi } from './cases.api';
+export { actionsApi } from './actions.api';
+export { debtorsApi } from './debtors.api';
+export { loansApi } from './loans.api';
+export { notificationsApi } from './notifications.api';
+export { helpRequestsApi } from './help-requests.api';
+export { allocationsApi } from './allocations.api';
+export { reportsApi } from './reports.api';
+export { auditLogsApi } from './audit-logs.api';
+export { aiApi } from './ai.api';
+export type { RecoveryScore, AllocationSuggestion, FraudAssessment, PortfolioInsights } from './ai.api';

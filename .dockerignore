@@ -1,0 +1,9 @@
+node_modules
+dist
+server
+.git
+.github
+k8s
+envs
+*.md
+.env*

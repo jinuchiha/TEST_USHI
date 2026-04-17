@@ -1,0 +1,17 @@
+export enum CRMStatus {
+  CB = 'CB',
+  NCC = 'NCC',
+  FIP = 'FIP',
+  NITP = 'NITP',
+  UTR = 'UTR',
+  DXB = 'DXB',
+  UNDER_NEGO = 'UNDER NEGO',
+  DISPUTE = 'Dispute',
+  PTP = 'PTP',
+  WIP = 'WIP',
+  EXPIRE = 'Expire',
+  WDS = 'WDS',
+  CLOSED = 'Closed',
+  WITHDRAWN = 'Withdrawn',
+  NIP = 'NIP',
+}
