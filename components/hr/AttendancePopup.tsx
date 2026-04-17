@@ -2,11 +2,19 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { User } from '../../types';
 
 // ── Types ────────────────────────────────────────────────────────────────────
+interface GeoLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  address?: string;
+}
+
 interface Session {
   checkIn: string;
   checkOut?: string;
   ipAddress: string;
   networkName: string;
+  location?: GeoLocation;
 }
 
 interface AttendanceRecord {
@@ -127,6 +135,26 @@ const getNetworkInfo = (): Promise<{ ip: string; network: string }> =>
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
+// ── Geolocation ─────────────────────────────────────────────────────────────
+const getLocation = (): Promise<GeoLocation | null> =>
+  new Promise(resolve => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: Math.round(pos.coords.accuracy),
+        });
+      },
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+
 // ── Component ────────────────────────────────────────────────────────────────
 const AttendancePopup: React.FC<AttendancePopupProps> = ({ currentUser, onCheckIn }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -135,6 +163,7 @@ const AttendancePopup: React.FC<AttendancePopupProps> = ({ currentUser, onCheckI
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
   const [isLate, setIsLate] = useState(false);
+  const [locationInfo, setLocationInfo] = useState<{ status: 'detecting' | 'granted' | 'denied' | 'unavailable'; data: GeoLocation | null }>({ status: 'detecting', data: null });
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveType, setLeaveType] = useState<'Sick' | 'Casual' | 'Annual'>('Casual');
   const [leaveDate, setLeaveDate] = useState('');
@@ -150,6 +179,21 @@ const AttendancePopup: React.FC<AttendancePopupProps> = ({ currentUser, onCheckI
   // Detect network
   useEffect(() => {
     getNetworkInfo().then(setNetworkInfo);
+  }, []);
+
+  // Detect location on mount
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationInfo({ status: 'unavailable', data: null });
+      return;
+    }
+    getLocation().then(loc => {
+      if (loc) {
+        setLocationInfo({ status: 'granted', data: loc });
+      } else {
+        setLocationInfo({ status: 'denied', data: null });
+      }
+    });
   }, []);
 
   // ── Computed data ──────────────────────────────────────────────────────────
@@ -221,7 +265,8 @@ const AttendancePopup: React.FC<AttendancePopupProps> = ({ currentUser, onCheckI
     const isLateCheckIn = now.getHours() >= LATE_THRESHOLD_HOUR;
     setIsLate(isLateCheckIn);
 
-    const net = await getNetworkInfo();
+    const [net, loc] = await Promise.all([getNetworkInfo(), getLocation()]);
+    if (loc) setLocationInfo({ status: 'granted', data: loc });
     const todayStr = toDateStr(now);
 
     const existingIdx = records.findIndex(
@@ -232,6 +277,7 @@ const AttendancePopup: React.FC<AttendancePopupProps> = ({ currentUser, onCheckI
       checkIn: now.toISOString(),
       ipAddress: net.ip,
       networkName: net.network,
+      location: loc || undefined,
     };
 
     let updated: AttendanceRecord[];
@@ -424,12 +470,35 @@ const AttendancePopup: React.FC<AttendancePopupProps> = ({ currentUser, onCheckI
         {/* ── Body ── */}
         <div className="px-6 py-5 space-y-5">
 
+          {/* ═══ Location Status ═══ */}
+          <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg" style={{ background: 'var(--color-bg-tertiary)', border: '1px solid var(--color-border)' }}>
+            {locationInfo.status === 'detecting' ? (
+              <>
+                <svg className="animate-spin w-4 h-4 text-text-tertiary" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                <span className="text-xs text-text-tertiary">Detecting your location...</span>
+              </>
+            ) : locationInfo.status === 'granted' && locationInfo.data ? (
+              <>
+                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Location captured</span>
+                <span className="text-[10px] text-text-tertiary font-mono">({locationInfo.data.latitude.toFixed(4)}, {locationInfo.data.longitude.toFixed(4)})</span>
+                <span className="text-[10px] text-text-tertiary">&middot; {locationInfo.data.accuracy}m accuracy</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Location access denied</span>
+                <span className="text-[10px] text-text-tertiary">— Allow location in browser settings</span>
+              </>
+            )}
+          </div>
+
           {/* ═══ Check-in Button ═══ */}
           {!checkedIn ? (
             <div className="text-center">
               <button
                 onClick={handleCheckIn}
-                disabled={checkingIn}
+                disabled={checkingIn || locationInfo.status === 'detecting'}
                 className="relative inline-flex items-center justify-center gap-3 px-10 py-4 text-white font-bold text-sm rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
                 style={{
                   background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark, #E07B1F) 100%)',
@@ -443,6 +512,11 @@ const AttendancePopup: React.FC<AttendancePopupProps> = ({ currentUser, onCheckI
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                     Recording Check-in...
+                  </>
+                ) : locationInfo.status === 'detecting' ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                    Waiting for Location...
                   </>
                 ) : (
                   <>
@@ -488,6 +562,11 @@ const AttendancePopup: React.FC<AttendancePopupProps> = ({ currentUser, onCheckI
                   ? 'Your late arrival has been noted. Please ensure punctuality.'
                   : 'Welcome! Have a productive day.'}
               </p>
+              {locationInfo.data && (
+                <p className="text-[10px] text-text-tertiary mt-2 font-mono">
+                  Location recorded: {locationInfo.data.latitude.toFixed(4)}, {locationInfo.data.longitude.toFixed(4)}
+                </p>
+              )}
             </div>
           )}
 
@@ -667,6 +746,7 @@ const AttendancePopup: React.FC<AttendancePopupProps> = ({ currentUser, onCheckI
         >
           <p className="text-[10px] text-text-tertiary">
             RecoVantage Attendance System v2 &middot; IP: {networkInfo.ip} &middot; {networkInfo.network}
+            {locationInfo.data && (<> &middot; GPS: {locationInfo.data.latitude.toFixed(4)}, {locationInfo.data.longitude.toFixed(4)}</>)}
           </p>
         </div>
       </div>
