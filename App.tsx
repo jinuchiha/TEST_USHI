@@ -48,6 +48,7 @@ import PortfolioIntelligence from './components/dashboard/advanced/PortfolioInte
 import PortfolioAgingDashboard from './components/dashboard/advanced/PortfolioAgingDashboard';
 import AttendancePortal from './components/hr/AttendancePortal';
 import TracingPanel from './components/cases/tracing/TracingPanel';
+import LegalModule from './components/legal/LegalModule';
 import SummaryWiseReport from './components/reports/SummaryWiseReport';
 import KanbanBoard from './components/cases/KanbanBoard';
 import PromiseDashboard from './components/reports/PromiseDashboard';
@@ -1031,6 +1032,7 @@ const App: React.FC = () => {
       case 'work-queue': return <WorkQueue cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
       case 'debtor-portal': return <DebtorPortal cases={enrichedCases} currentUser={currentUser!} />;
       case 'custom-reports': return <CustomReportBuilder cases={enrichedCases} coordinators={coordinators} currentUser={currentUser!} />;
+      case 'legal': return <LegalModule allCases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
       case 'tracing-tools': return <OfficerDashboard cases={enrichedCases.filter(c => c.assignedOfficerId === currentUser!.id && (c.tracingStatus === 'Tracing Not Avail' || c.tracingStatus === 'Under Tracing'))} onSelectCase={handleSelectCase} currentUser={currentUser!} onAddCase={() => {}} onImportCases={() => {}} filters={{}} clearFilters={() => {}} coordinators={coordinators} onBulkInactive={() => {}} onReassign={() => {}} />;
 
       // Placeholder views

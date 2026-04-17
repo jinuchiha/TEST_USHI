@@ -295,6 +295,8 @@ export const SIDEBAR_NAV_ITEMS: NavItem[] = [
     { label: 'Reports', view: '', isHeading: true, roles: [Role.MANAGER] },
     { label: 'Custom Reports', view: 'custom-reports', icon: ICONS.documentReport, roles: [Role.MANAGER] },
     { label: 'Debtor Portal Preview', view: 'debtor-portal', icon: ICONS.user, roles: [Role.MANAGER] },
+    { label: 'Legal', view: '', isHeading: true, roles: [Role.MANAGER] },
+    { label: 'Legal Management', view: 'legal', icon: ICONS.documentReport, roles: [Role.MANAGER] },
     { label: 'Automation', view: '', isHeading: true, roles: [Role.MANAGER] },
     { label: 'Workflow Rules', view: 'workflow-automation', icon: ICONS.bolt, roles: [Role.MANAGER] },
 
@@ -315,6 +317,7 @@ export const SIDEBAR_NAV_ITEMS: NavItem[] = [
     { label: 'Team Leaderboard', view: 'productivity', icon: ICONS.performance, roles: [Role.CEO] },
     { label: 'HR Dashboard', view: 'hr-dashboard', icon: ICONS.user, roles: [Role.CEO] },
     { label: 'Tools', view: '', isHeading: true, roles: [Role.CEO] },
+    { label: 'Legal Management', view: 'legal', icon: ICONS.documentReport, roles: [Role.CEO] },
     { label: 'Custom Reports', view: 'custom-reports', icon: ICONS.documentReport, roles: [Role.CEO] },
     { label: 'Debtor Portal Preview', view: 'debtor-portal', icon: ICONS.user, roles: [Role.CEO] },
     { label: 'Workflow Rules', view: 'workflow-automation', icon: ICONS.bolt, roles: [Role.CEO] },
