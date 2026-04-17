@@ -23,6 +23,7 @@ interface LayoutProps {
   onUpdateTaskStatus: (notificationId: string, taskStatus: 'pending' | 'done') => void;
   onReplyToNotification: (notificationId: string, replyMessage: string) => void;
   isLive?: boolean;
+  onCheckOut?: () => void;
 }
 
 const NavItem: React.FC<{
@@ -167,7 +168,8 @@ const Header: React.FC<{
     onUpdateTaskStatus: (notificationId: string, taskStatus: 'pending' | 'done') => void;
     onReplyToNotification: (notificationId: string, replyMessage: string) => void;
     isLive?: boolean;
-}> = ({ currentUser, onLogout, onGlobalSearch, theme, setTheme, onToggleSidebar, notifications, helpRequests, onResolveHelpRequest, onMarkNotificationAsRead, onUpdateTaskStatus, onReplyToNotification, isLive }) => {
+    onCheckOut?: () => void;
+}> = ({ currentUser, onLogout, onGlobalSearch, theme, setTheme, onToggleSidebar, notifications, helpRequests, onResolveHelpRequest, onMarkNotificationAsRead, onUpdateTaskStatus, onReplyToNotification, isLive, onCheckOut }) => {
     const [showHelpRequests, setShowHelpRequests] = useState(false);
     const [showOfficerNotifications, setShowOfficerNotifications] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -265,6 +267,23 @@ const Header: React.FC<{
                 <span className={`h-1.5 w-1.5 rounded-full ${isLive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                 {isLive ? 'Live' : 'Offline'}
               </div>
+              {/* Check-out button for officers */}
+              {currentUser.role === Role.OFFICER && onCheckOut && (
+                <button
+                  onClick={() => {
+                    if (confirm('Are you sure you want to check out? This will record your end time.')) {
+                      onCheckOut();
+                      onLogout();
+                    }
+                  }}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                  </svg>
+                  Check Out
+                </button>
+              )}
               <ToggleSwitch isOn={theme === 'dark'} handleToggle={() => setTheme(theme === 'light' ? 'dark' : 'light')} />
              
               {isAdmin && (
@@ -382,7 +401,7 @@ const Header: React.FC<{
 }
 
 
-const Layout: React.FC<LayoutProps> = ({ children, currentUser, onLogout, navItems, activeView, setActiveView, onHomeClick, helpRequests, onRequestHelp, onResolveHelpRequest, onGlobalSearch, theme, setTheme, notifications, onMarkNotificationAsRead, onUpdateTaskStatus, onReplyToNotification, isLive }) => {
+const Layout: React.FC<LayoutProps> = ({ children, currentUser, onLogout, navItems, activeView, setActiveView, onHomeClick, helpRequests, onRequestHelp, onResolveHelpRequest, onGlobalSearch, theme, setTheme, notifications, onMarkNotificationAsRead, onUpdateTaskStatus, onReplyToNotification, isLive, onCheckOut }) => {
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [helpQuery, setHelpQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -428,6 +447,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, onLogout, navIte
                 onUpdateTaskStatus={onUpdateTaskStatus}
                 onReplyToNotification={onReplyToNotification}
                 isLive={isLive}
+                onCheckOut={onCheckOut}
             />
             <main className="flex-1 overflow-y-auto px-4 pb-4">
                 {children}

@@ -18,7 +18,7 @@ interface ManagerDashboardProps {
   onOpenSendNotificationModal: () => void;
 }
 
-type TabId = 'overview' | 'officers' | 'banks' | 'forecast' | 'alerts';
+type TabId = 'overview' | 'officers' | 'banks' | 'forecast' | 'alerts' | 'attendance';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -466,6 +466,7 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({ allCases, coordinat
     { id: 'banks', label: 'Bank Portfolio' },
     { id: 'forecast', label: 'Forecast' },
     { id: 'alerts', label: 'Alerts' },
+    { id: 'attendance', label: 'Live Attendance' },
   ];
 
   const alertCount = computed.ptpBreachesToday.length + computed.zeroActivityOfficers.length + computed.highValueCases.length + computed.legalDeadlineCases.length;
@@ -993,7 +994,157 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({ allCases, coordinat
           </Card>
         </div>
       )}
+
+      {/* ================================================================ */}
+      {/* TAB: Live Attendance */}
+      {/* ================================================================ */}
+      {activeTab === 'attendance' && (
+        <div className="space-y-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+          <LiveAttendanceSection coordinators={coordinators} />
+        </div>
+      )}
     </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Live Attendance Section (reads from localStorage)
+// ---------------------------------------------------------------------------
+
+const ATTENDANCE_STORAGE_KEY = 'rv_attendance_v2';
+
+interface AttendanceEntry {
+  id: string;
+  officerId: string;
+  officerName: string;
+  date: string;
+  sessions: { checkIn: string; checkOut?: string; ipAddress: string; networkName: string; location?: { latitude: number; longitude: number; accuracy: number } }[];
+  status: 'present' | 'late' | 'half-day' | 'absent' | 'leave';
+  totalHours: number;
+}
+
+const LiveAttendanceSection: React.FC<{ coordinators: User[] }> = ({ coordinators }) => {
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const attendance = useMemo(() => {
+    let records: AttendanceEntry[] = [];
+    try {
+      records = JSON.parse(localStorage.getItem(ATTENDANCE_STORAGE_KEY) || '[]');
+    } catch {}
+
+    const todayRecords = records.filter(r => r.date === todayStr);
+
+    return coordinators.map(officer => {
+      const record = todayRecords.find(r => r.officerId === officer.id);
+      const lastSession = record?.sessions?.[record.sessions.length - 1];
+      const checkInTime = lastSession?.checkIn;
+      const checkOutTime = lastSession?.checkOut;
+      const location = lastSession?.location;
+      const isOnline = record && !checkOutTime;
+
+      return {
+        id: officer.id,
+        name: officer.name,
+        agentCode: officer.agentCode || '--',
+        status: record?.status || 'absent' as const,
+        checkInTime,
+        checkOutTime,
+        totalHours: record?.totalHours || 0,
+        isOnline: !!isOnline,
+        location,
+        ip: lastSession?.ipAddress,
+        network: lastSession?.networkName,
+      };
+    });
+  }, [coordinators, todayStr]);
+
+  const presentCount = attendance.filter(a => a.status === 'present' || a.status === 'late').length;
+  const lateCount = attendance.filter(a => a.status === 'late').length;
+  const absentCount = attendance.filter(a => a.status === 'absent').length;
+  const onLeave = attendance.filter(a => a.status === 'leave').length;
+  const onlineNow = attendance.filter(a => a.isOnline).length;
+
+  const fmtTime = (iso?: string) => iso ? new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '--';
+
+  const statusBadge = (status: string, isOnline: boolean) => {
+    if (isOnline) return { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400', label: 'Online' };
+    switch (status) {
+      case 'present': return { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', label: 'Checked Out' };
+      case 'late': return { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', label: 'Late' };
+      case 'leave': return { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-400', label: 'On Leave' };
+      default: return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', label: 'Absent' };
+    }
+  };
+
+  return (
+    <>
+      {/* KPI Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <KpiMini label="Total Officers" value={coordinators.length} />
+        <KpiMini label="Present Today" value={presentCount} color="text-emerald-500" sub={`${Math.round((presentCount / coordinators.length) * 100)}%`} />
+        <KpiMini label="Late Today" value={lateCount} color="text-amber-500" />
+        <KpiMini label="Absent" value={absentCount} color="text-red-500" />
+        <KpiMini label="Online Now" value={onlineNow} color="text-blue-500" sub={`${onLeave} on leave`} />
+      </div>
+
+      {/* Attendance Table */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+            {ICONS.calendar('w-5 h-5')}
+            Today's Attendance — {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </h2>
+          <span className="text-xs text-text-secondary">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[var(--color-bg-tertiary)]">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-text-secondary">Officer</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-text-secondary">Status</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-text-secondary">Check-in</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-text-secondary">Check-out</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-text-secondary">Hours</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-text-secondary">Location</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-text-secondary">Network</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attendance.map((a, idx) => {
+                const badge = statusBadge(a.status, a.isOnline);
+                return (
+                  <tr key={a.id} className="border-t border-border hover:bg-[var(--color-bg-muted)] transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center text-xs font-bold">
+                            {a.agentCode}
+                          </div>
+                          {a.isOnline && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[var(--color-bg-secondary)]" />}
+                        </div>
+                        <span className="font-medium text-text-primary">{a.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${badge.bg} ${badge.text}`}>
+                        {badge.label}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-xs text-text-secondary">{fmtTime(a.checkInTime)}</td>
+                    <td className="py-3 px-4 font-mono text-xs text-text-secondary">{fmtTime(a.checkOutTime)}</td>
+                    <td className="py-3 px-4 text-xs font-semibold text-text-primary">{a.totalHours > 0 ? `${a.totalHours}h` : a.isOnline ? 'Active' : '--'}</td>
+                    <td className="py-3 px-4 text-[11px] text-text-tertiary font-mono">
+                      {a.location ? `${a.location.latitude.toFixed(3)}, ${a.location.longitude.toFixed(3)}` : '--'}
+                    </td>
+                    <td className="py-3 px-4 text-[11px] text-text-tertiary">{a.network || '--'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </>
   );
 };
 

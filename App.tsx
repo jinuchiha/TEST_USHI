@@ -384,7 +384,36 @@ const App: React.FC = () => {
     return success;
   };
 
+  const handleCheckOut = useCallback(() => {
+    if (!currentUser) return;
+    try {
+      const records = JSON.parse(localStorage.getItem('rv_attendance_v2') || '[]');
+      const todayStr = new Date().toISOString().split('T')[0];
+      const idx = records.findIndex((r: any) => r.officerId === currentUser.id && r.date === todayStr);
+      if (idx >= 0 && records[idx].sessions?.length > 0) {
+        const lastSession = records[idx].sessions[records[idx].sessions.length - 1];
+        if (!lastSession.checkOut) {
+          lastSession.checkOut = new Date().toISOString();
+          // Calculate total hours
+          const totalMs = records[idx].sessions.reduce((sum: number, s: any) => {
+            if (s.checkIn && s.checkOut) {
+              return sum + (new Date(s.checkOut).getTime() - new Date(s.checkIn).getTime());
+            }
+            return sum;
+          }, 0);
+          records[idx].totalHours = Math.round((totalMs / 3600000) * 100) / 100;
+          localStorage.setItem('rv_attendance_v2', JSON.stringify(records));
+        }
+      }
+    } catch {}
+  }, [currentUser]);
+
   const handleLogout = () => {
+    // Auto check-out on logout for officers
+    if (currentUser?.role === Role.OFFICER) {
+      handleCheckOut();
+    }
+    setHasCheckedIn(false);
     authLogout();
     setActiveView('dashboard');
   };
@@ -1012,7 +1041,21 @@ const App: React.FC = () => {
 
   // Attendance enforcement gate — Officers must check in before accessing CRM
   if (!hasCheckedIn && currentUser.role === Role.OFFICER) {
-    return <AttendancePopup currentUser={currentUser} onCheckIn={() => setHasCheckedIn(true)} />;
+    return <AttendancePopup currentUser={currentUser} onCheckIn={(wasLate?: boolean) => {
+      setHasCheckedIn(true);
+      // Auto-notify managers if officer was late
+      if (wasLate) {
+        const managers = users.filter(u => u.role === Role.MANAGER || u.role === Role.ADMIN);
+        managers.forEach(mgr => {
+          handleSendNotification(
+            mgr.id,
+            `Late check-in: ${currentUser.name} checked in at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`,
+            'Urgent',
+            false
+          );
+        });
+      }
+    }} />;
   }
 
   // Attendance enforcement gate (API mode only)
@@ -1084,6 +1127,7 @@ const App: React.FC = () => {
         onUpdateTaskStatus={handleUpdateTaskStatus}
         onReplyToNotification={handleReplyToNotification}
         isLive={isLive}
+        onCheckOut={handleCheckOut}
       >
         {renderView()}
       </Layout>
