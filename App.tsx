@@ -257,27 +257,40 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isCaseDetailModalOpen, navigateCase]);
 
-  // ── Check-in enforcement: on login, auto check-in (API mode) ──
+  // ── Check-in enforcement: on login ──
   useEffect(() => {
-    if (isAuthenticated && currentUser && useApi) {
+    if (!isAuthenticated || !currentUser) return;
+
+    if (useApi) {
+      // API mode: check server for attendance status
       apiClient.get<any>('/api/hr/attendance/check-in-status')
         .then(res => {
           if (res.data?.checkedIn) {
             setHasCheckedIn(true);
-          } else {
-            // Auto check-in
-            setCheckingIn(true);
-            apiClient.post('/api/hr/attendance/check-in')
-              .then(() => setHasCheckedIn(true))
-              .catch(() => setHasCheckedIn(true)) // Don't block on error
-              .finally(() => setCheckingIn(false));
           }
+          // If not checked in, leave hasCheckedIn=false so the gate shows
         })
         .catch(() => setHasCheckedIn(true)); // Don't block on error
-      // Start session
       apiClient.post('/api/hr/sessions/start', {}).catch(() => {});
     } else {
-      setHasCheckedIn(true); // Demo mode: skip enforcement
+      // Demo mode: officers must check in, other roles skip
+      if (currentUser.role === Role.OFFICER) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        try {
+          const records = JSON.parse(localStorage.getItem('rv_attendance_v2') || '[]');
+          const alreadyCheckedIn = records.some((r: any) => r.officerId === currentUser.id && r.date === todayStr);
+          if (alreadyCheckedIn) {
+            setHasCheckedIn(true);
+          }
+          // If not checked in, leave hasCheckedIn=false so AttendancePopup shows
+        } catch {
+          // On error, don't block
+          setHasCheckedIn(true);
+        }
+      } else {
+        // Non-officers (Manager, CEO, etc.) skip attendance gate
+        setHasCheckedIn(true);
+      }
     }
   }, [isAuthenticated, currentUser?.id, useApi]);
 
@@ -997,19 +1010,9 @@ const App: React.FC = () => {
     return <Login onLogin={handleLogin} />;
   }
 
-  // Attendance enforcement gate — Demo mode: show popup for officers
-  if (!useApi && !hasCheckedIn && currentUser.role === Role.OFFICER) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const alreadyCheckedIn = (() => {
-      try {
-        const records = JSON.parse(localStorage.getItem('rv_attendance_v2') || '[]');
-        return records.some((r: any) => r.officerId === currentUser.id && r.date === todayStr);
-      } catch { return false; }
-    })();
-    if (!alreadyCheckedIn) {
-      return <AttendancePopup currentUser={currentUser} onCheckIn={() => setHasCheckedIn(true)} />;
-    }
-    if (!hasCheckedIn) setHasCheckedIn(true);
+  // Attendance enforcement gate — Officers must check in before accessing CRM
+  if (!hasCheckedIn && currentUser.role === Role.OFFICER) {
+    return <AttendancePopup currentUser={currentUser} onCheckIn={() => setHasCheckedIn(true)} />;
   }
 
   // Attendance enforcement gate (API mode only)
