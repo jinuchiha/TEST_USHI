@@ -65,12 +65,14 @@ import { useRealtimeSync } from './hooks/useRealtimeSync';
 
 
 const IDLE_TIMEOUT_MS = 600000; // 10 minutes — officers are on calls for 5-10 min
+const IDLE_WARNING_MS = 480000; // 8 minutes — warn 2 minutes before logout
 
 const App: React.FC = () => {
     const { currentUser, isLoading: authLoading, isAuthenticated, login: apiLogin, logout: authLogout, loginLocal, useApi } = useAuth();
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [hasCheckedIn, setHasCheckedIn] = useState(false);
     const [checkingIn, setCheckingIn] = useState(false);
+    const [showIdleWarning, setShowIdleWarning] = useState(false);
 
   const [activeView, setActiveView] = useState('dashboard');
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -211,17 +213,26 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  // ── Idle timeout: auto-logout after 45 seconds of inactivity ──
+  // ── Idle timeout: warn at 8 min, auto-logout at 10 min ──
   useEffect(() => {
     if (!currentUser) return;
-    let timer: ReturnType<typeof setTimeout>;
+    let warningTimer: ReturnType<typeof setTimeout>;
+    let logoutTimer: ReturnType<typeof setTimeout>;
 
     const resetTimer = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
+      clearTimeout(warningTimer);
+      clearTimeout(logoutTimer);
+      setShowIdleWarning(false);
+
+      warningTimer = setTimeout(() => {
+        setShowIdleWarning(true);
+      }, IDLE_WARNING_MS);
+
+      logoutTimer = setTimeout(() => {
         if (useApi) {
           apiClient.post('/api/hr/sessions/end', { reason: 'idle_logout' }).catch(() => {});
         }
+        setShowIdleWarning(false);
         handleLogout();
       }, IDLE_TIMEOUT_MS);
     };
@@ -231,7 +242,8 @@ const App: React.FC = () => {
     resetTimer();
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(warningTimer);
+      clearTimeout(logoutTimer);
       events.forEach(e => window.removeEventListener(e, resetTimer));
     };
   }, [currentUser?.id]);
@@ -1230,6 +1242,29 @@ const App: React.FC = () => {
                 initialSubStatus={modalState.initialStatuses?.subStatus}
             />
         )}
+    {/* === SESSION TIMEOUT WARNING === */}
+    {showIdleWarning && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998] flex items-center justify-center p-4 animate-fade-in">
+        <div className="panel p-8 max-w-sm text-center space-y-4 animate-fade-in-up" style={{ background: 'var(--glass-bg)' }}>
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/30">
+            <svg className="w-7 h-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-text-primary">Session Expiring</h3>
+            <p className="text-sm text-text-secondary mt-1">You will be logged out in <strong className="text-amber-600">2 minutes</strong> due to inactivity.</p>
+          </div>
+          <button
+            onClick={() => setShowIdleWarning(false)}
+            className="px-6 py-2.5 text-sm font-bold rounded-lg text-white transition-all hover:scale-105"
+            style={{ background: 'var(--color-accent)' }}
+          >
+            I'm Still Here
+          </button>
+        </div>
+      </div>
+    )}
     {/* === GLOBAL TOAST NOTIFICATION === */}
     {toast && (
       <div className={`fixed bottom-5 right-5 z-[9999] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium text-white animate-fade-in-up flex items-center gap-2 ${
