@@ -50,6 +50,7 @@ import AttendancePortal from './components/hr/AttendancePortal';
 import TracingPanel from './components/cases/tracing/TracingPanel';
 import LegalModule from './components/legal/LegalModule';
 import ChequeTracker from './components/gulf/ChequeTracker';
+import CallDispositionLogger from './components/interactions/CallDispositionLogger';
 import SummaryWiseReport from './components/reports/SummaryWiseReport';
 import KanbanBoard from './components/cases/KanbanBoard';
 import PromiseDashboard from './components/reports/PromiseDashboard';
@@ -1035,6 +1036,7 @@ const App: React.FC = () => {
       case 'custom-reports': return <CustomReportBuilder cases={enrichedCases} coordinators={coordinators} currentUser={currentUser!} />;
       case 'legal': return <LegalModule allCases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
       case 'cheque-tracker': return <ChequeTracker cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'call-logger': return <CallDispositionLogger cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
       case 'tracing-tools': return <OfficerDashboard cases={enrichedCases.filter(c => c.assignedOfficerId === currentUser!.id && (c.tracingStatus === 'Tracing Not Avail' || c.tracingStatus === 'Under Tracing'))} onSelectCase={handleSelectCase} currentUser={currentUser!} onAddCase={() => {}} onImportCases={() => {}} filters={{}} clearFilters={() => {}} coordinators={coordinators} onBulkInactive={() => {}} onReassign={() => {}} />;
 
       // Placeholder views

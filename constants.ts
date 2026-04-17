@@ -266,6 +266,7 @@ export const SIDEBAR_NAV_ITEMS: NavItem[] = [
     // ═══ OFFICER: Clean, minimal — only what they need daily ═══
     { label: 'Dashboard', view: 'dashboard-officer', icon: ICONS.dashboard, roles: [Role.OFFICER] },
     { label: 'Work Queue', view: 'work-queue', icon: ICONS.bolt, roles: [Role.OFFICER] },
+    { label: 'Call Logger', view: 'call-logger', icon: ICONS.activities, roles: [Role.OFFICER] },
     { label: 'My Cases', view: 'cases', icon: ICONS.case, roles: [Role.OFFICER] },
     { label: 'My Tasks', view: 'productivity', icon: ICONS.activities, roles: [Role.OFFICER] },
     { label: 'Liability Emails', view: 'liability-emails', icon: ICONS.payment, roles: [Role.OFFICER] },
