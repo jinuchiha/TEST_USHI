@@ -83,10 +83,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginLocal = useCallback((userName: string, password: string, users: User[]): boolean => {
+    // Demo mode: validate username exists, accept default demo PIN
+    const DEMO_PIN = 'demo1234';
     const user = users.find(
-      u => u.name.toLowerCase() === userName.toLowerCase() && u.password === password
+      u => u.name.toLowerCase() === userName.toLowerCase() && u.id !== 'unassigned-user-id'
     );
-    if (user) {
+    if (user && password === DEMO_PIN) {
       setCurrentUser(user);
       return true;
     }

@@ -29,7 +29,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
-  const quickLogin = async (name: string, pass: string, quickEmail?: string) => {
+  const quickLogin = async (name: string, quickEmail?: string) => {
     setError('');
     setLoading(true);
     if (useApi && quickEmail) {
@@ -37,7 +37,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setLoading(false);
       if (!success) setError('Backend not reachable. Switch to Demo Mode.');
     } else {
-      const success = onLogin(name, pass);
+      const success = onLogin(name, 'demo1234');
       setLoading(false);
       if (!success) setError('Login failed.');
     }
@@ -196,7 +196,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <button
                       key={u.email}
                       disabled={loading}
-                      onClick={() => quickLogin('', '', u.email)}
+                      onClick={() => quickLogin('', u.email)}
                       className="flex flex-col items-center py-3 px-2 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50/50 transition group"
                     >
                       <span className="text-xs font-bold text-gray-700 group-hover:text-orange-600">{u.label}</span>
@@ -208,7 +208,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <button
                       key={u.key}
                       disabled={loading}
-                      onClick={() => quickLogin(u.user!.name, u.user!.password!)}
+                      onClick={() => quickLogin(u.user!.name)}
                       className="flex flex-col items-center py-3 px-2 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50/50 transition group"
                     >
                       <span className="text-xs font-bold text-gray-700 group-hover:text-orange-600">{u.label}</span>
@@ -217,9 +217,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   ))
                 )}
               </div>
-              {useApi && (
+              {!useApi && (
                 <p className="text-center text-gray-300 text-[10px] mt-3">
-                  Password: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">password123</code>
+                  Demo PIN: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">demo1234</code>
                 </p>
               )}
             </div>

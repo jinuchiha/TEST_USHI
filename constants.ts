@@ -88,19 +88,20 @@ export const STATUS_MAP: Record<CRMStatus, SubStatus[]> = {
     [CRMStatus.HOLD]: [SubStatus.NONE],
 };
 
-export const UNASSIGNED_USER: User = { id: 'unassigned-user-id', name: 'Unassigned', role: Role.OFFICER, password: 'N/A' };
+export const UNASSIGNED_USER: User = { id: 'unassigned-user-id', name: 'Unassigned', role: Role.OFFICER };
 
+// Demo mode credentials are validated in AuthContext — not stored in plain text here
 export const USERS: User[] = [
   UNASSIGNED_USER,
-  { id: 'user-0', name: 'Admin User', role: Role.ADMIN, password: 'password123' },
-  { id: 'user-ceo', name: 'CEO User', role: Role.CEO, password: 'password123' },
-  { id: 'user-1', name: 'Samantha Jones', role: Role.MANAGER, password: 'password123' },
-  { id: 'user-finance', name: 'Accountant User', role: Role.FINANCE, password: 'password123' },
-  { id: 'user-3', name: 'Maria Garcia', role: Role.OFFICER, password: 'password123', agentCode: 'MG', target: 150000, dailyTarget: 5000 },
-  { id: 'user-4', name: 'John Smith', role: Role.OFFICER, password: 'password123', agentCode: 'JS', target: 150000, dailyTarget: 5000 },
-  { id: 'user-5', name: 'Emily White', role: Role.OFFICER, password: 'password123', agentCode: 'EW', target: 150000, dailyTarget: 5000 },
-  { id: 'user-6', name: 'Michael Brown', role: Role.OFFICER, password: 'password123', agentCode: 'MB', target: 150000, dailyTarget: 5000 },
-  { id: 'user-7', name: 'Jessica Lee', role: Role.OFFICER, password: 'password123', agentCode: 'JL', target: 150000, dailyTarget: 5000 },
+  { id: 'user-0', name: 'Admin User', role: Role.ADMIN },
+  { id: 'user-ceo', name: 'CEO User', role: Role.CEO },
+  { id: 'user-1', name: 'Samantha Jones', role: Role.MANAGER },
+  { id: 'user-finance', name: 'Accountant User', role: Role.FINANCE },
+  { id: 'user-3', name: 'Maria Garcia', role: Role.OFFICER, agentCode: 'MG', target: 150000, dailyTarget: 5000 },
+  { id: 'user-4', name: 'John Smith', role: Role.OFFICER, agentCode: 'JS', target: 150000, dailyTarget: 5000 },
+  { id: 'user-5', name: 'Emily White', role: Role.OFFICER, agentCode: 'EW', target: 150000, dailyTarget: 5000 },
+  { id: 'user-6', name: 'Michael Brown', role: Role.OFFICER, agentCode: 'MB', target: 150000, dailyTarget: 5000 },
+  { id: 'user-7', name: 'Jessica Lee', role: Role.OFFICER, agentCode: 'JL', target: 150000, dailyTarget: 5000 },
 ];
 
 export const COORDINATORS: User[] = USERS.filter(u => u.role === Role.OFFICER);
