@@ -43,17 +43,26 @@ import { AppController } from './app.controller';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('database.host'),
-        port: configService.get<number>('database.port'),
-        database: configService.get<string>('database.name'),
-        username: configService.get<string>('database.user'),
-        password: configService.get<string>('database.password'),
-        autoLoadEntities: true,
-        synchronize: configService.get<string>('NODE_ENV') === 'development',
-        logging: configService.get<string>('NODE_ENV') === 'development',
-      }),
+      useFactory: (configService: ConfigService) => {
+        const useSsl = configService.get<boolean>('database.ssl');
+        return {
+          type: 'postgres',
+          host: configService.get<string>('database.host'),
+          port: configService.get<number>('database.port'),
+          database: configService.get<string>('database.name'),
+          username: configService.get<string>('database.user'),
+          password: configService.get<string>('database.password'),
+          autoLoadEntities: true,
+          // synchronize: true creates/updates tables from entities (use for first-time setup or dev)
+          // Set DB_SYNC=true in .env for first run, then disable for production migrations
+          synchronize: configService.get<string>('DB_SYNC') === 'true',
+          logging: configService.get<string>('NODE_ENV') === 'development',
+          ssl: useSsl ? { rejectUnauthorized: false } : false,
+          extra: useSsl ? {
+            ssl: { rejectUnauthorized: false },
+          } : {},
+        };
+      },
     }),
     AuthModule,
     UsersModule,

@@ -152,7 +152,7 @@ const CallDispositionLogger: React.FC<CallDispositionLoggerProps> = ({ cases, cu
             <div className="p-3 rounded-lg bg-[var(--color-bg-tertiary)] text-xs">
               <p className="font-semibold">{selectedCase.debtor.name}</p>
               <p className="text-text-secondary">{selectedCase.loan.bank} | {formatCurrency(selectedCase.loan.currentBalance, selectedCase.loan.currency)}</p>
-              <p className="text-text-tertiary">{selectedCase.debtor.phone || 'No phone'}</p>
+              <p className="text-text-tertiary">{selectedCase.debtor.phones?.[0] || 'No phone'}</p>
             </div>
           )}
 

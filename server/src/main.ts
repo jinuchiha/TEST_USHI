@@ -6,10 +6,22 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // CORS
+  // CORS — allow frontend dev server (multiple ports), credentials for auth cookies
+  const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000,http://localhost:4173,http://localhost:5174').split(',');
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow same-origin (no Origin header) and dev origins
+      if (!origin || corsOrigins.includes(origin) || origin.startsWith('http://localhost')) {
+        callback(null, true);
+      } else {
+        callback(null, true); // dev: be permissive
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    exposedHeaders: ['Content-Disposition'],
+    maxAge: 3600,
   });
 
   // Global validation pipe

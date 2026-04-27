@@ -159,6 +159,9 @@ export interface Loan {
   lpd?: string; // Last Payment Date
   wod?: string; // Write-off Date
   cif?: string; // Customer Information File
+  ica?: string; // ICA Number (bank-side identifier)
+  bankCoordinator?: string; // Bank Coordinator name/contact
+  bankMetadata?: Record<string, string>; // Extra bank-specific fields (BCE/TLE/etc)
 }
 
 export interface TracingLogEntry {

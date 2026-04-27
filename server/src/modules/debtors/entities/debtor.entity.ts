@@ -25,13 +25,13 @@ export class Debtor {
   @Column({ type: 'text', nullable: true })
   address: string | null;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   passport: string | null;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   cnic: string | null;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   eid: string | null;
 
   @Column({ type: 'date', nullable: true })

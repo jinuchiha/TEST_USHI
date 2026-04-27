@@ -8,6 +8,7 @@ import MessageTemplates from './MessageTemplates';
 import SettlementCalculator from './SettlementCalculator';
 import HardshipAssessment from './HardshipAssessment';
 import SkipTracing from './SkipTracing';
+import RecoveryCoachPanel from '../ai-coach/RecoveryCoachPanel';
 
 const InfoPair: React.FC<{ label: string; value: React.ReactNode; className?: string }> = ({ label, value, className = '' }) => (
     <div className={className}>
@@ -165,7 +166,7 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseData, allCases, onS
     const [showTracingModal, setShowTracingModal] = useState(false);
     const [showRemarkForm, setShowRemarkForm] = useState(false);
 
-    const [activeTab, setActiveTab] = useState<'caseDetails' | 'actionHistory' | 'auditLog' | 'relatedCases' | 'documents' | 'messages' | 'settlement' | 'hardship' | 'skipTrace'>('caseDetails');
+    const [activeTab, setActiveTab] = useState<'caseDetails' | 'actionHistory' | 'auditLog' | 'relatedCases' | 'documents' | 'messages' | 'settlement' | 'hardship' | 'skipTrace' | 'aiCoach'>('caseDetails');
     const [isEditing, setIsEditing] = useState(false);
     const [editedData, setEditedData] = useState({ ...caseData.debtor, ...caseData.loan });
     
@@ -212,7 +213,7 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseData, allCases, onS
 
     const handleSaveDetails = () => {
         const debtorFields: (keyof Debtor)[] = ['name', 'address', 'passport', 'cnic', 'eid', 'dob', 'emails', 'phones'];
-        const loanFields: (keyof Loan)[] = ['accountNumber', 'originalAmount', 'currentBalance', 'product', 'bank', 'subProduct', 'bucket', 'lpd', 'wod', 'cif'];
+        const loanFields: (keyof Loan)[] = ['accountNumber', 'originalAmount', 'currentBalance', 'product', 'bank', 'subProduct', 'bucket', 'lpd', 'wod', 'cif', 'ica' as keyof Loan, 'bankCoordinator' as keyof Loan];
         
         const debtorDetails: Partial<Debtor> = {};
         const loanDetails: Partial<Loan> = {};
@@ -509,6 +510,7 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseData, allCases, onS
              <div className="border-b border-border">
                 <nav className="-mb-px flex space-x-4 px-6" aria-label="Tabs">
                     <TabButton label="Case Details" count={0} value="caseDetails" activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <TabButton label="🧠 AI Coach" count={0} value="aiCoach" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton label="History" count={history.length} value="actionHistory" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton label="Documents" count={0} value="documents" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton label="Messages" count={0} value="messages" activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -559,7 +561,7 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseData, allCases, onS
                                             ))}
                                             <button type="button" onClick={() => handleAddDetailListItem('emails')} className="text-sm text-primary flex items-center gap-1 pt-1">{ICONS.plus('w-4 h-4')} Add Email</button>
                                         </div>
-                                    ) : ( (caseData.debtor.emails || []).map((email, index) => (<p key={index} className="text-base font-medium text-text-primary break-words mt-1">{email || 'N/A'}</p>)) )}
+                                    ) : ( (caseData.debtor.emails || []).map((email, index) => (<p key={`email-${index}-${email}`} className="text-base font-medium text-text-primary break-words mt-1">{email || 'N/A'}</p>)) )}
                                 </div>
                                  <div className="sm:col-span-1">
                                     <p className="text-sm text-text-secondary">Phone Numbers</p>
@@ -573,7 +575,7 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseData, allCases, onS
                                             ))}
                                             <button type="button" onClick={() => handleAddDetailListItem('phones')} className="text-sm text-primary flex items-center gap-1 pt-1">{ICONS.plus('w-4 h-4')} Add Phone</button>
                                         </div>
-                                    ) : ( (caseData.debtor.phones || []).map((phone, index) => (<p key={index} className="text-base font-medium text-text-primary break-words mt-1">{phone || 'N/A'}</p>)) )}
+                                    ) : ( (caseData.debtor.phones || []).map((phone, index) => (<p key={`phone-${index}-${phone}`} className="text-base font-medium text-text-primary break-words mt-1">{phone || 'N/A'}</p>)) )}
                                 </div>
 
                                 <EditableInfoPair label="Date of Birth" value={editedData.dob} isEditing={isEditing} name="dob" onChange={(v) => handleDetailChange('dob', v)} type="date"/>
@@ -597,7 +599,24 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseData, allCases, onS
                                 <EditableInfoPair label="LPD" value={editedData.lpd} isEditing={isEditing} name="lpd" onChange={(v) => handleDetailChange('lpd', v)} type="date"/>
                                 <EditableInfoPair label="WOD" value={editedData.wod} isEditing={isEditing} name="wod" onChange={(v) => handleDetailChange('wod', v)} type="date"/>
                                 <EditableInfoPair label="CIF" value={editedData.cif} isEditing={isEditing} name="cif" onChange={(v) => handleDetailChange('cif', v)} />
+                                <EditableInfoPair label="ICA" value={(editedData as any).ica} isEditing={isEditing} name="ica" onChange={(v) => handleDetailChange('ica', v)} />
+                                <EditableInfoPair label="Bank Coordinator" value={(editedData as any).bankCoordinator} isEditing={isEditing} name="bankCoordinator" onChange={(v) => handleDetailChange('bankCoordinator', v)} className="col-span-2 sm:col-span-2"/>
                             </div>
+
+                            {/* Bank metadata (extra columns from CSV — BCE/TLE/KO/SD/UEA/etc) */}
+                            {(caseData.loan as any).bankMetadata && Object.keys((caseData.loan as any).bankMetadata).length > 0 && (
+                                <div className="mt-4 p-3 rounded-lg bg-[var(--color-bg-tertiary)]">
+                                    <p className="text-[10px] font-bold text-text-secondary uppercase tracking-wide mb-2">Bank-Specific Fields</p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {Object.entries((caseData.loan as any).bankMetadata as Record<string, string>).map(([k, v]) => (
+                                            <div key={k}>
+                                                <p className="text-[10px] text-text-tertiary">{k}</p>
+                                                <p className="text-xs font-medium text-text-primary">{v || '—'}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <hr className="border-border"/>
                         
@@ -708,6 +727,12 @@ const CaseDetailView: React.FC<CaseDetailViewProps> = ({ caseData, allCases, onS
             {activeTab === 'skipTrace' && (
                 <div className="p-4">
                     <SkipTracing caseData={caseData} currentUser={currentUser} />
+                </div>
+            )}
+
+            {activeTab === 'aiCoach' && (
+                <div className="p-4">
+                    <RecoveryCoachPanel case={caseData} allCases={allCases} compact />
                 </div>
             )}
 

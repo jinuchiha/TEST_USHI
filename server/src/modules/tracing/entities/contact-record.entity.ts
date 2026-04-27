@@ -17,13 +17,13 @@ export class ContactRecord {
   @Column({ length: 255 })
   value: string;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   label: string | null; // "Primary", "Alternate", "Work", "Spouse"
 
   @Column({ type: 'varchar', length: 20, default: 'unverified' })
   status: 'valid' | 'invalid' | 'switched_off' | 'new_found' | 'unverified';
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   source: string | null; // "Manual", "Credit Bureau", "Third Party", "Debtor Provided"
 
   @Column({ type: 'int', default: 0 })

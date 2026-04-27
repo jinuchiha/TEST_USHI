@@ -23,7 +23,7 @@ export class Document {
   @Column({ type: 'int', nullable: true })
   fileSize: number | null;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   mimeType: string | null;
 
   @Column({ type: 'boolean', default: false })

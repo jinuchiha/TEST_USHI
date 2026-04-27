@@ -27,7 +27,7 @@ export class HelpRequest {
   @Column({ type: 'varchar', length: 10, default: 'pending' })
   status: 'pending' | 'resolved';
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   resolvedBy: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })

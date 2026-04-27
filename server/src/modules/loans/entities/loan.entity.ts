@@ -27,16 +27,16 @@ export class Loan {
   @Column({ type: 'decimal', precision: 14, scale: 2 })
   currentBalance: number;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   product: string | null;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   bank: string | null;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   subProduct: string | null;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   bucket: string | null;
 
   @Column({ type: 'varchar', length: 3 })
@@ -48,8 +48,17 @@ export class Loan {
   @Column({ type: 'date', nullable: true })
   wod: string | null;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   cif: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  ica: string | null;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  bankCoordinator: string | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  bankMetadata: Record<string, string> | null;
 
   @ManyToOne(() => Debtor, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'debtorId' })

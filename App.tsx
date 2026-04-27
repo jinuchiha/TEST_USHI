@@ -51,6 +51,24 @@ import TracingPanel from './components/cases/tracing/TracingPanel';
 import LegalModule from './components/legal/LegalModule';
 import ChequeTracker from './components/gulf/ChequeTracker';
 import CallDispositionLogger from './components/interactions/CallDispositionLogger';
+import FieldVisitModule from './components/visits/FieldVisitModule';
+import TeamFloor from './components/team-floor/TeamFloor';
+import VintageAnalyzer from './components/ai-analyzer/VintageAnalyzer';
+import PakistanSkipTracing from './components/pakistan-tracing/PakistanSkipTracing';
+import RecoveryCoach from './components/ai-coach/RecoveryCoach';
+import OfficerActivityLog from './components/activity-log/OfficerActivityLog';
+import BulkComms from './components/bulk-comms/BulkComms';
+import RecallEngine from './components/recall-engine/RecallEngine';
+import DuplicateDetector from './components/duplicate-detect/DuplicateDetector';
+import AICaseIntake from './components/case-intake/AICaseIntake';
+import NegotiationSim from './components/negotiation-sim/NegotiationSim';
+import BankIntelligence from './components/bank-intel/BankIntelligence';
+import VoiceCallStudio from './components/voice/VoiceCallStudio';
+import ExecutiveDashboard from './components/exec-dashboard/ExecutiveDashboard';
+import OfficerXP from './components/officer-xp/OfficerXP';
+import FamilyNetwork from './components/family-network/FamilyNetwork';
+import CrystalBall from './components/crystal-ball/CrystalBall';
+import ImportCenter from './components/import/ImportCenter';
 import SummaryWiseReport from './components/reports/SummaryWiseReport';
 import KanbanBoard from './components/cases/KanbanBoard';
 import PromiseDashboard from './components/reports/PromiseDashboard';
@@ -80,6 +98,7 @@ const App: React.FC = () => {
   const [activeView, setActiveView] = useState('dashboard');
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [navFilters, setNavFilters] = useState<any>({});
+  const [dailyReportDate, setDailyReportDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   
   // Data state — load from localStorage if demo mode has saved data
   const [users, setUsers] = useState<User[]>(() => {
@@ -372,7 +391,7 @@ const App: React.FC = () => {
       let initialView = 'dashboard-officer';
       switch(currentUser.role) {
           case Role.MANAGER: initialView = 'dashboard-manager'; break;
-          case Role.ADMIN: initialView = 'annual-forecast'; break;
+          case Role.ADMIN: initialView = 'dashboard-manager'; break;  // Admin == Manager merged
           case Role.CEO: initialView = 'dashboard-ceo'; break;
           case Role.FINANCE: initialView = 'dashboard-accountant'; break;
       }
@@ -389,7 +408,7 @@ const App: React.FC = () => {
         let initialView = 'dashboard-officer';
         switch(user.role) {
             case Role.MANAGER: initialView = 'dashboard-manager'; break;
-            case Role.ADMIN: initialView = 'annual-forecast'; break;
+            case Role.ADMIN: initialView = 'dashboard-manager'; break;  // Admin == Manager merged
             case Role.CEO: initialView = 'dashboard-ceo'; break;
             case Role.FINANCE: initialView = 'dashboard-accountant'; break;
         }
@@ -441,8 +460,7 @@ const App: React.FC = () => {
           if (caseIndex === -1) return prevCases;
 
           updatedCase = { ...newCases[caseIndex] };
-          
-          updatedCase.history.push({ ...newAction, id: `action-${Date.now()}` });
+          updatedCase.history = [...updatedCase.history, { ...newAction, id: `action-${Date.now()}` }];
           updatedCase.lastContactDate = newAction.timestamp;
           if (newAction.type === ActionType.PAYMENT_RECEIVED && newAction.amountPaid) {
               const loanIndex = loans.findIndex(l => l.id === updatedCase!.loanId);
@@ -501,13 +519,13 @@ const App: React.FC = () => {
             updatedCase.contactStatus = statuses.contactStatus;
             updatedCase.workStatus = statuses.workStatus;
 
-            updatedCase.auditLog.push({
+            updatedCase.auditLog = [...updatedCase.auditLog, {
                 id: `log-${Date.now()}`,
                 caseId: caseId,
                 timestamp: new Date().toISOString(),
                 userId: currentUser.id,
                 details: `Status changed to ${statuses.crmStatus}/${statuses.subStatus}. Contact: ${statuses.contactStatus}, Work: ${statuses.workStatus}. Note: ${notes}`
-            });
+            }];
         }
         
         if ((notes && notes.trim()) || ptpDetails) {
@@ -667,13 +685,13 @@ const App: React.FC = () => {
             };
 
             updatedCase.history = updatedHistory;
-            updatedCase.auditLog.push({
+            updatedCase.auditLog = [...updatedCase.auditLog, {
                 id: `log-verify-${Date.now()}`,
                 caseId: caseId,
                 timestamp: new Date().toISOString(),
                 userId: currentUser.id,
                 details: `Payment of ${formatCurrency(paymentAction.amountPaid, loans.find(l => l.id === updatedCase.loanId)?.currency)} (Action ID: ${actionId}) verified by ${currentUser.name}.`
-            });
+            }];
             
             newCases[caseIndex] = updatedCase;
             return newCases;
@@ -700,6 +718,10 @@ const App: React.FC = () => {
 
   const handleReassign = (caseIds: string[], newOfficerId: string) => {
     if (!currentUser) return;
+    if (currentUser.role !== Role.MANAGER && currentUser.role !== Role.ADMIN && currentUser.role !== Role.CEO) {
+      setToast({ message: 'Only Manager / Admin / CEO can reassign cases.', type: 'error' });
+      return;
+    }
     const newOfficer = users.find(u => u.id === newOfficerId);
     if (!newOfficer) return;
 
@@ -808,7 +830,23 @@ const App: React.FC = () => {
   };
 
   const handleConfirmWithdrawal = (caseId: string) => {
-    setCases(prev => prev.map(c => c.id === caseId ? { ...c, crmStatus: CRMStatus.WITHDRAWN, subStatus: SubStatus.BANK_RECALL } : c));
+    if (!currentUser) return;
+    if (currentUser.role !== Role.MANAGER && currentUser.role !== Role.ADMIN && currentUser.role !== Role.CEO) {
+      setToast({ message: 'Only Manager / Admin / CEO can confirm withdrawals.', type: 'error' });
+      return;
+    }
+    setCases(prev => prev.map(c => c.id === caseId ? {
+      ...c,
+      crmStatus: CRMStatus.WITHDRAWN,
+      subStatus: SubStatus.BANK_RECALL,
+      auditLog: [...c.auditLog, {
+        id: `log-${Date.now()}`,
+        caseId,
+        timestamp: new Date().toISOString(),
+        userId: currentUser.id,
+        details: `Withdrawal confirmed by ${currentUser.name} (${currentUser.role}).`,
+      }],
+    } : c));
   }
   
   const handleAddCase = (data: { debtor: Omit<Debtor, 'id'>, loan: Omit<Loan, 'id' | 'debtorId'>, caseInfo: { assignedOfficerId: string } }): boolean => {
@@ -1006,7 +1044,7 @@ const App: React.FC = () => {
       case 'withdrawn-cases': return <WithdrawnCasesView cases={enrichedCases} coordinators={coordinators} onReactivate={handleReactivateCase} onSelectCase={handleSelectCase} currentUser={currentUser!} onBulkReactivate={handleBulkReactivate} />;
       case 'pending-withdrawals': return <PendingWithdrawalsView cases={enrichedCases} onConfirmWithdrawal={handleConfirmWithdrawal} />;
       case 'users': return <UserManagementView users={users} cases={enrichedCases} onAddUser={handleAddUser} onRemoveUser={handleRemoveUser} onUpdateUser={handleUpdateUser} currentUser={currentUser!} />;
-      case 'daily-report': return <DailySummaryReport cases={enrichedCases} coordinators={currentUser!.role === Role.OFFICER ? [currentUser!] : coordinators} date={new Date().toISOString().split('T')[0]} setDate={() => {}} onSelectOfficer={() => {}} getDailySummaryAI={async () => "AI summary is a future feature."} onSelectCase={handleSelectCase} />;
+      case 'daily-report': return <DailySummaryReport cases={enrichedCases} coordinators={currentUser!.role === Role.OFFICER ? [currentUser!] : coordinators} date={dailyReportDate} setDate={setDailyReportDate} onSelectOfficer={(officerId: string) => { setNavFilters({ ...navFilters, assignedOfficerId: officerId }); setActiveView('cases'); }} getDailySummaryAI={async () => "AI summary not configured. Set up backend AI service to enable."} onSelectCase={handleSelectCase} />;
       case 'payments': return <PaymentsView cases={enrichedCases} currentUser={currentUser!} onVerifyPayment={handleVerifyPayment} />;
       case 'system-audit': return <AdminAuditView loginHistory={loginHistory} users={users} />;
       case 'help-requests': return <HelpRequestsView helpRequests={helpRequests} onResolveHelpRequest={handleResolveHelpRequest} users={users} onAdminReply={handleAdminReply} />;
@@ -1037,7 +1075,25 @@ const App: React.FC = () => {
       case 'legal': return <LegalModule allCases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
       case 'cheque-tracker': return <ChequeTracker cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
       case 'call-logger': return <CallDispositionLogger cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
-      case 'tracing-tools': return <OfficerDashboard cases={enrichedCases.filter(c => c.assignedOfficerId === currentUser!.id && (c.tracingStatus === 'Tracing Not Avail' || c.tracingStatus === 'Under Tracing'))} onSelectCase={handleSelectCase} currentUser={currentUser!} onAddCase={() => {}} onImportCases={() => {}} filters={{}} clearFilters={() => {}} coordinators={coordinators} onBulkInactive={() => {}} onReassign={() => {}} />;
+      case 'field-visits': return <FieldVisitModule cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'team-floor': return <TeamFloor users={users} cases={enrichedCases} currentUser={currentUser!} activeView={activeView} onSelectCase={handleSelectCase} />;
+      case 'vintage-ai': return <VintageAnalyzer cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'tracing-tools': return <PakistanSkipTracing cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'pk-tracing': return <PakistanSkipTracing cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'recovery-coach': return <RecoveryCoach cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'activity-log': return <OfficerActivityLog users={users} cases={enrichedCases} loginHistory={loginHistory} currentUser={currentUser!} />;
+      case 'bulk-comms': return <BulkComms cases={enrichedCases} currentUser={currentUser!} />;
+      case 'recall-engine': return <RecallEngine cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'connected-debtors': return <DuplicateDetector cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'case-intake': return <AICaseIntake currentUser={currentUser!} />;
+      case 'negotiation-sim': return <NegotiationSim currentUser={currentUser!} />;
+      case 'bank-intel': return <BankIntelligence cases={enrichedCases} currentUser={currentUser!} />;
+      case 'voice-studio': return <VoiceCallStudio cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'exec-dashboard': return <ExecutiveDashboard cases={enrichedCases} users={users} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'officer-xp': return <OfficerXP cases={enrichedCases} users={users} currentUser={currentUser!} />;
+      case 'family-network': return <FamilyNetwork cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'crystal-ball': return <CrystalBall cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
+      case 'import-center': return <ImportCenter users={users} currentUser={currentUser!} />;
 
       // Placeholder views
       case 'search': return <CaseSearchView allCases={enrichedCases} coordinators={coordinators} onSelectCase={handleSelectCase} currentUser={currentUser!} />;

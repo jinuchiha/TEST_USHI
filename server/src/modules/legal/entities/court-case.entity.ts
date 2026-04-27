@@ -14,13 +14,13 @@ export class CourtCase {
   @Column({ length: 100 })
   courtCaseNumber: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   court: string | null;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   lawyerName: string | null;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   lawyerPhone: string | null;
 
   @Column({ type: 'varchar', length: 20, default: 'filed' })

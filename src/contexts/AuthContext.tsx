@@ -25,9 +25,8 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [useApi, setUseApi] = useState(() => {
-    return localStorage.getItem('crm_useApi') === 'true';
-  });
+  // Live mode only — demo removed
+  const [useApi, setUseApi] = useState(true);
 
   // Try to restore session on mount
   useEffect(() => {

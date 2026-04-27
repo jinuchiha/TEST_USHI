@@ -123,7 +123,14 @@ class ApiClient {
   patch<T>(path: string, body?: any): Promise<T> {
     return this.request<T>(path, {
       method: 'PATCH',
-      body: JSON.stringify(body),
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  }
+
+  put<T>(path: string, body?: any): Promise<T> {
+    return this.request<T>(path, {
+      method: 'PUT',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   }
 

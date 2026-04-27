@@ -31,11 +31,20 @@ const PaymentPlanWizard: React.FC<Props> = ({ isOpen, onClose, caseData, onSave 
     const inst = parseInt(installments) || 1;
     const perInst = Math.ceil(amt / inst * 100) / 100;
     const schedule: PaymentPlan['schedule'] = [];
-    const freqDays = frequency === 'weekly' ? 7 : frequency === 'biweekly' ? 14 : 30;
 
     for (let i = 0; i < inst; i++) {
       const d = new Date(startDate);
-      d.setDate(d.getDate() + i * freqDays);
+      if (frequency === 'monthly') {
+        const targetMonth = d.getMonth() + i;
+        const targetDay = d.getDate();
+        d.setDate(1);
+        d.setMonth(targetMonth);
+        const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        d.setDate(Math.min(targetDay, lastDay));
+      } else {
+        const freqDays = frequency === 'weekly' ? 7 : 14;
+        d.setDate(d.getDate() + i * freqDays);
+      }
       schedule.push({
         date: d.toISOString().split('T')[0],
         amount: i === inst - 1 ? Math.round((amt - perInst * (inst - 1)) * 100) / 100 : perInst,

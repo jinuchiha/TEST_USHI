@@ -103,9 +103,11 @@ const SettlementCalculator: React.FC<SettlementCalculatorProps> = ({ caseData, c
   const installmentSchedule = useMemo(() => {
     const schedule: Array<{ date: string; amount: number }> = [];
     const today = new Date();
+    const startDay = today.getDate();
     for (let i = 0; i < numInstallments; i++) {
-      const d = new Date(today);
-      d.setMonth(d.getMonth() + i);
+      const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      d.setDate(Math.min(startDay, lastDay));
       const remaining = settlementAmount - monthlyAmount * i;
       schedule.push({
         date: d.toISOString().split('T')[0],

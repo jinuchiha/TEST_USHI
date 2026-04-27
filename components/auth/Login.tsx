@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { USERS } from '../../constants';
 import { useAuth } from '../../src/contexts/AuthContext';
 
 interface LoginProps {
   onLogin: (userName: string, password?: string) => boolean;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const { useApi, setUseApi, login: apiLogin } = useAuth();
-  const [userName, setUserName] = useState('');
+const Login: React.FC<LoginProps> = () => {
+  const { login: apiLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,51 +16,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    if (useApi) {
-      const success = await apiLogin(email, password);
-      setLoading(false);
-      if (!success) setError('Invalid email or password.');
-    } else {
-      const success = onLogin(userName, password);
-      setLoading(false);
-      if (!success) setError('Invalid username or password.');
-    }
+    const success = await apiLogin(email, password);
+    setLoading(false);
+    if (!success) setError('Invalid email or password.');
   };
-
-  const quickLogin = async (name: string, quickEmail?: string) => {
-    setError('');
-    setLoading(true);
-    if (useApi && quickEmail) {
-      const success = await apiLogin(quickEmail, 'password123');
-      setLoading(false);
-      if (!success) setError('Backend not reachable. Switch to Demo Mode.');
-    } else {
-      const success = onLogin(name, 'demo1234');
-      setLoading(false);
-      if (!success) setError('Login failed.');
-    }
-  };
-
-  const apiUsers = [
-    { label: 'CEO', email: 'ceo@crm.com', desc: 'Executive dashboard' },
-    { label: 'Manager', email: 'sarah@crm.com', desc: 'Team operations' },
-    { label: 'Officer', email: 'ahmed@crm.com', desc: 'Case management' },
-    { label: 'Accountant', email: 'finance@crm.com', desc: 'Payment verification' },
-  ];
-
-  const testUsers = {
-    manager: USERS.find(u => u.name === 'Samantha Jones'),
-    officer: USERS.find(u => u.name === 'Maria Garcia'),
-    accountant: USERS.find(u => u.name === 'Accountant User'),
-    ceo: USERS.find(u => u.name === 'CEO User'),
-  };
-
-  const demoQuickUsers = [
-    { key: 'ceo', label: 'CEO', desc: 'Executive dashboard', user: testUsers.ceo },
-    { key: 'manager', label: 'Manager', desc: 'Team operations', user: testUsers.manager },
-    { key: 'officer', label: 'Officer', desc: 'Case management', user: testUsers.officer },
-    { key: 'accountant', label: 'Accountant', desc: 'Payment verification', user: testUsers.accountant },
-  ];
 
   return (
     <div className="min-h-screen flex" style={{ background: '#1B2A4A' }}>
@@ -95,11 +52,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </p>
           <div className="grid grid-cols-3 gap-6 pt-4">
             <div>
-              <p className="text-3xl font-bold text-white">9</p>
-              <p className="text-blue-200/40 text-xs mt-1">AI Engines</p>
+              <p className="text-3xl font-bold text-white">14</p>
+              <p className="text-blue-200/40 text-xs mt-1">AI Modules</p>
             </div>
             <div>
-              <p className="text-3xl font-bold" style={{ color: '#F28C28' }}>90+</p>
+              <p className="text-3xl font-bold" style={{ color: '#F28C28' }}>100+</p>
               <p className="text-blue-200/40 text-xs mt-1">API Endpoints</p>
             </div>
             <div>
@@ -114,7 +71,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       {/* Right side — Login form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8" style={{ background: '#F7F8FC' }}>
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#1B2A4A' }}>
               Reco<span style={{ color: '#F28C28' }}>V</span>antage
@@ -125,37 +81,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <h2 className="text-xl font-bold mb-1" style={{ color: '#1B2A4A' }}>Welcome back</h2>
             <p className="text-gray-400 text-sm mb-6">Sign in to your account</p>
 
-            {/* Mode Toggle */}
-            <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
-              <button
-                onClick={() => setUseApi(false)}
-                className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${!useApi ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400'}`}
-              >
-                Demo Mode
-              </button>
-              <button
-                onClick={() => setUseApi(true)}
-                className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${useApi ? 'bg-white shadow-sm text-gray-900' : 'text-gray-400'}`}
-              >
-                API Mode
-              </button>
-            </div>
-
             <form onSubmit={handleLogin} className="space-y-4">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-2.5">{error}</div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                  {useApi ? 'Email' : 'Username'}
-                </label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>
                 <input
-                  type={useApi ? 'email' : 'text'}
-                  value={useApi ? email : userName}
-                  onChange={(e) => useApi ? setEmail(e.target.value) : setUserName(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 text-sm rounded-xl bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-300 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition"
-                  placeholder={useApi ? 'you@company.com' : 'Enter username'}
+                  placeholder="you@recovantage.com"
                   required
                 />
               </div>
@@ -187,42 +125,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </button>
             </form>
 
-            {/* Quick Access */}
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <p className="text-[10px] font-semibold text-gray-300 uppercase tracking-widest text-center mb-3">Quick Access</p>
-              <div className="grid grid-cols-2 gap-2">
-                {useApi ? (
-                  apiUsers.map(u => (
-                    <button
-                      key={u.email}
-                      disabled={loading}
-                      onClick={() => quickLogin('', u.email)}
-                      className="flex flex-col items-center py-3 px-2 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50/50 transition group"
-                    >
-                      <span className="text-xs font-bold text-gray-700 group-hover:text-orange-600">{u.label}</span>
-                      <span className="text-[10px] text-gray-300 mt-0.5">{u.desc}</span>
-                    </button>
-                  ))
-                ) : (
-                  demoQuickUsers.filter(u => u.user).map(u => (
-                    <button
-                      key={u.key}
-                      disabled={loading}
-                      onClick={() => quickLogin(u.user!.name)}
-                      className="flex flex-col items-center py-3 px-2 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50/50 transition group"
-                    >
-                      <span className="text-xs font-bold text-gray-700 group-hover:text-orange-600">{u.label}</span>
-                      <span className="text-[10px] text-gray-300 mt-0.5">{u.desc}</span>
-                    </button>
-                  ))
-                )}
-              </div>
-              {!useApi && (
-                <p className="text-center text-gray-300 text-[10px] mt-3">
-                  Demo PIN: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">demo1234</code>
-                </p>
-              )}
-            </div>
+            <p className="text-center text-gray-400 text-[11px] mt-6">
+              Forgot password? Contact your admin.
+            </p>
           </div>
         </div>
       </div>

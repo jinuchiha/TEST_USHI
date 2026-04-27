@@ -27,7 +27,7 @@ export class User {
   @Column({ type: 'varchar', length: 20 })
   role: Role;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   agentCode: string | null;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
