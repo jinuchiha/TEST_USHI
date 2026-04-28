@@ -69,6 +69,7 @@ import OfficerXP from './components/officer-xp/OfficerXP';
 import FamilyNetwork from './components/family-network/FamilyNetwork';
 import CrystalBall from './components/crystal-ball/CrystalBall';
 import ImportCenter from './components/import/ImportCenter';
+import DailyFocus from './components/daily-focus/DailyFocus';
 import SummaryWiseReport from './components/reports/SummaryWiseReport';
 import KanbanBoard from './components/cases/KanbanBoard';
 import PromiseDashboard from './components/reports/PromiseDashboard';
@@ -608,7 +609,11 @@ const App: React.FC = () => {
             if (caseIndex === -1) return prevCases;
 
             const oldCase = newCases[caseIndex];
-            const oldLoan = loans.find(l => l.id === oldCase.loanId)!;
+            const oldLoan = loans.find(l => l.id === oldCase.loanId);
+            if (!oldLoan) {
+                setToast({ message: 'Loan not found for this case — cannot log payment.', type: 'error' });
+                return prevCases;
+            }
 
             const newAction: Action = {
                 id: `action-${Date.now()}`,
@@ -632,7 +637,7 @@ const App: React.FC = () => {
             
             const updatedCase = {
                 ...oldCase,
-                crmStatus: isClosingPayment ? CRMStatus.CLOSED : modalState.initialStatuses!.crmStatus,
+                crmStatus: isClosingPayment ? CRMStatus.CLOSED : (modalState.initialStatuses?.crmStatus || oldCase.crmStatus),
                 subStatus: isClosingPayment ? data.finalSubStatus : SubStatus.FOLLOW_UP,
                 history: [newAction, ...oldCase.history],
                 auditLog: [...oldCase.auditLog, {
@@ -641,7 +646,7 @@ const App: React.FC = () => {
                     timestamp: new Date().toISOString(),
                     userId: currentUser.id,
                     details: isPartialPayment
-                        ? `Partial payment of ${formatCurrency(data.amountPaid, oldLoan.currency)} logged. Case status set to ${modalState.initialStatuses!.crmStatus}/Follow Up.`
+                        ? `Partial payment of ${formatCurrency(data.amountPaid, oldLoan.currency)} logged. Case status set to ${(modalState.initialStatuses?.crmStatus || oldCase.crmStatus)}/Follow Up.`
                         : `Payment of ${formatCurrency(data.amountPaid, oldLoan.currency)} logged. Case status set to CLOSED/${data.finalSubStatus}.`
                 }]
             };
@@ -690,7 +695,7 @@ const App: React.FC = () => {
                 caseId: caseId,
                 timestamp: new Date().toISOString(),
                 userId: currentUser.id,
-                details: `Payment of ${formatCurrency(paymentAction.amountPaid, loans.find(l => l.id === updatedCase.loanId)?.currency)} (Action ID: ${actionId}) verified by ${currentUser.name}.`
+                details: `Payment of ${formatCurrency(paymentAction.amountPaid || 0, loans.find(l => l.id === updatedCase.loanId)?.currency || 'AED')} (Action ID: ${actionId}) verified by ${currentUser.name}.`
             }];
             
             newCases[caseIndex] = updatedCase;
@@ -1094,6 +1099,7 @@ const App: React.FC = () => {
       case 'family-network': return <FamilyNetwork cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
       case 'crystal-ball': return <CrystalBall cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
       case 'import-center': return <ImportCenter users={users} currentUser={currentUser!} />;
+      case 'daily-focus': return <DailyFocus cases={enrichedCases} currentUser={currentUser!} onSelectCase={handleSelectCase} />;
 
       // Placeholder views
       case 'search': return <CaseSearchView allCases={enrichedCases} coordinators={coordinators} onSelectCase={handleSelectCase} currentUser={currentUser!} />;

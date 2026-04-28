@@ -1,5 +1,6 @@
 import React from 'react';
 import { ICONS } from '../../constants';
+import { useEscKey } from '../../hooks/useEscKey';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   confirmText = 'Confirm',
   confirmButtonClass = 'btn-primary'
 }) => {
+  useEscKey(onClose, isOpen);
   if (!isOpen) return null;
 
   return (

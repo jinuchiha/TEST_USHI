@@ -212,9 +212,14 @@ const VoiceCallStudio: React.FC<VoiceCallStudioProps> = ({ cases, currentUser, o
     rec.lang = 'en-PK';
     rec.onresult = (e: any) => {
       let final = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
-      }
+      try {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const result = e.results[i];
+          if (result?.isFinal && result[0]?.transcript) {
+            final += result[0].transcript + ' ';
+          }
+        }
+      } catch {}
       if (final) setTranscript(t => t + final);
     };
     rec.onerror = () => setLiveTranscriptOn(false);

@@ -266,6 +266,7 @@ export const WORKFLOW_STEPS = [
 export const SIDEBAR_NAV_ITEMS: NavItem[] = [
     // ═══ OFFICER: Clean, minimal — only what they need daily ═══
     { label: 'Dashboard', view: 'dashboard-officer', icon: ICONS.dashboard, roles: [Role.OFFICER] },
+    { label: '🎯 Today\'s Focus', view: 'daily-focus', icon: ICONS.bolt, roles: [Role.OFFICER] },
     { label: 'Work Queue', view: 'work-queue', icon: ICONS.bolt, roles: [Role.OFFICER] },
     { label: 'Call Logger', view: 'call-logger', icon: ICONS.activities, roles: [Role.OFFICER] },
     { label: 'Field Visits', view: 'field-visits', icon: ICONS.mapPin, roles: [Role.OFFICER] },
@@ -288,6 +289,7 @@ export const SIDEBAR_NAV_ITEMS: NavItem[] = [
     // ═══ MANAGER: Operations focused ═══
     { label: 'Dashboard', view: 'dashboard-manager', icon: ICONS.dashboard, roles: [Role.MANAGER, Role.ADMIN] },
     { label: 'Executive View 🚀', view: 'exec-dashboard', icon: ICONS.performance, roles: [Role.MANAGER, Role.ADMIN] },
+    { label: '🎯 Team Focus', view: 'daily-focus', icon: ICONS.bolt, roles: [Role.MANAGER, Role.ADMIN] },
     { label: 'Cases', view: '', isHeading: true, roles: [Role.MANAGER, Role.ADMIN] },
     { label: 'All Cases', view: 'cases', icon: ICONS.case, roles: [Role.MANAGER, Role.ADMIN] },
     { label: '📥 Import Center', view: 'import-center', icon: ICONS.upload, roles: [Role.MANAGER, Role.ADMIN] },

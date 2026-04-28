@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useEscKey } from '../../hooks/useEscKey';
 import { Debtor, Loan, User, EnrichedCase, CRMStatus, Role } from '../../types';
 import { ICONS } from '../../constants';
 
@@ -74,6 +75,9 @@ const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSubmit, 
     bucket: 'Recovery',
     assignedOfficerId: '',
   });
+  const [formError, setFormError] = useState('');
+
+  useEscKey(onClose, isOpen);
   
   const isOfficer = currentUser.role === Role.OFFICER;
 
@@ -93,17 +97,18 @@ const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSubmit, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setFormError('');
+
     const existingCase = allCases.find(c => c.loan.accountNumber === formData.accountNumber);
     if (existingCase) {
-        alert('A case with this account number already exists.');
+        setFormError('A case with this account number already exists.');
         return;
     }
 
     const assignedOfficerId = isOfficer ? currentUser.id : formData.assignedOfficerId;
 
     if (!assignedOfficerId) {
-        alert("An officer must be assigned to the case.");
+        setFormError("An officer must be assigned to the case.");
         return;
     }
 
@@ -220,6 +225,12 @@ const AddCaseModal: React.FC<AddCaseModalProps> = ({ isOpen, onClose, onSubmit, 
               </div>
           )}
           
+          {formError && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-lg px-4 py-2.5">
+              ⚠️ {formError}
+            </div>
+          )}
+
           <div className="flex justify-end pt-4 sticky bottom-0 bg-inherit py-4 rounded-b-lg">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium border border-border rounded-md shadow-sm hover:bg-black/5 dark:hover:bg-white/10 mr-3">
               Cancel
