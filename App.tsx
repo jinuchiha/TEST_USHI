@@ -1,7 +1,7 @@
 
 
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { CASES, COORDINATORS, DEBTORS, LOANS, SIDEBAR_NAV_ITEMS, UNASSIGNED_USER, USERS, ICONS } from './constants';
 import { User, EnrichedCase, Debtor, Loan, Case, Role, HelpRequest, Notification, Action, ActionType, CRMStatus, SubStatus, UpdateCaseResult, NotificationReply, LoginRecord, LogPaymentSubmitData, AllocationLogEntry } from './types';
 import Login from './components/auth/Login';
@@ -51,25 +51,26 @@ import TracingPanel from './components/cases/tracing/TracingPanel';
 import LegalModule from './components/legal/LegalModule';
 import ChequeTracker from './components/gulf/ChequeTracker';
 import CallDispositionLogger from './components/interactions/CallDispositionLogger';
-import FieldVisitModule from './components/visits/FieldVisitModule';
-import TeamFloor from './components/team-floor/TeamFloor';
-import VintageAnalyzer from './components/ai-analyzer/VintageAnalyzer';
-import PakistanSkipTracing from './components/pakistan-tracing/PakistanSkipTracing';
-import RecoveryCoach from './components/ai-coach/RecoveryCoach';
-import OfficerActivityLog from './components/activity-log/OfficerActivityLog';
-import BulkComms from './components/bulk-comms/BulkComms';
-import RecallEngine from './components/recall-engine/RecallEngine';
-import DuplicateDetector from './components/duplicate-detect/DuplicateDetector';
-import AICaseIntake from './components/case-intake/AICaseIntake';
-import NegotiationSim from './components/negotiation-sim/NegotiationSim';
-import BankIntelligence from './components/bank-intel/BankIntelligence';
-import VoiceCallStudio from './components/voice/VoiceCallStudio';
-import ExecutiveDashboard from './components/exec-dashboard/ExecutiveDashboard';
-import OfficerXP from './components/officer-xp/OfficerXP';
-import FamilyNetwork from './components/family-network/FamilyNetwork';
-import CrystalBall from './components/crystal-ball/CrystalBall';
-import ImportCenter from './components/import/ImportCenter';
-import DailyFocus from './components/daily-focus/DailyFocus';
+// Lazy-loaded — these are heavy and only needed when navigated to
+const FieldVisitModule = lazy(() => import('./components/visits/FieldVisitModule'));
+const TeamFloor = lazy(() => import('./components/team-floor/TeamFloor'));
+const VintageAnalyzer = lazy(() => import('./components/ai-analyzer/VintageAnalyzer'));
+const PakistanSkipTracing = lazy(() => import('./components/pakistan-tracing/PakistanSkipTracing'));
+const RecoveryCoach = lazy(() => import('./components/ai-coach/RecoveryCoach'));
+const OfficerActivityLog = lazy(() => import('./components/activity-log/OfficerActivityLog'));
+const BulkComms = lazy(() => import('./components/bulk-comms/BulkComms'));
+const RecallEngine = lazy(() => import('./components/recall-engine/RecallEngine'));
+const DuplicateDetector = lazy(() => import('./components/duplicate-detect/DuplicateDetector'));
+const AICaseIntake = lazy(() => import('./components/case-intake/AICaseIntake'));
+const NegotiationSim = lazy(() => import('./components/negotiation-sim/NegotiationSim'));
+const BankIntelligence = lazy(() => import('./components/bank-intel/BankIntelligence'));
+const VoiceCallStudio = lazy(() => import('./components/voice/VoiceCallStudio'));
+const ExecutiveDashboard = lazy(() => import('./components/exec-dashboard/ExecutiveDashboard'));
+const OfficerXP = lazy(() => import('./components/officer-xp/OfficerXP'));
+const FamilyNetwork = lazy(() => import('./components/family-network/FamilyNetwork'));
+const CrystalBall = lazy(() => import('./components/crystal-ball/CrystalBall'));
+const ImportCenter = lazy(() => import('./components/import/ImportCenter'));
+const DailyFocus = lazy(() => import('./components/daily-focus/DailyFocus'));
 import SummaryWiseReport from './components/reports/SummaryWiseReport';
 import KanbanBoard from './components/cases/KanbanBoard';
 import PromiseDashboard from './components/reports/PromiseDashboard';
@@ -1209,7 +1210,16 @@ const App: React.FC = () => {
         isLive={isLive}
         onCheckOut={handleCheckOut}
       >
-        {renderView()}
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-64">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 border-3 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs text-text-tertiary">Loading module...</p>
+            </div>
+          </div>
+        }>
+          {renderView()}
+        </Suspense>
       </Layout>
       {isAddCaseModalOpen && <AddCaseModal isOpen={isAddCaseModalOpen} onClose={() => setIsAddCaseModalOpen(false)} onSubmit={handleAddCase} coordinators={coordinators} allCases={enrichedCases} currentUser={currentUser} />}
       {isImportCasesModalOpen && <ImportCasesModal isOpen={isImportCasesModalOpen} onClose={() => setIsImportCasesModalOpen(false)} onImport={() => alert('Import logic not implemented yet.')} instructions="Please ensure your file has the following columns: Sr no, Account No, Case Name, Product, Sub-Product, Bank, Remaining OS, Case Status Code, BucketRecovery, Type" fileType=".csv, .txt" />}
