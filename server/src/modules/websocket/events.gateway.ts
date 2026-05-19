@@ -17,9 +17,14 @@ import { Logger } from '@nestjs/common';
  * - PTP reminders
  * - Officer online status
  */
+const wsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: wsOrigins,
     credentials: true,
   },
   namespace: '/ws',

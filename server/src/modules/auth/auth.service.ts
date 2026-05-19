@@ -1,19 +1,21 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, LessThan } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { UsersService } from '../users/users.service';
 import { v4 as uuidv4 } from 'uuid';
+import { UsersService } from '../users/users.service';
+import { RefreshToken } from './entities/refresh-token.entity';
 
 @Injectable()
 export class AuthService {
-  private refreshTokens: Map<string, { userId: string; expiresAt: Date }> =
-    new Map();
-
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    @InjectRepository(RefreshToken)
+    private refreshTokenRepo: Repository<RefreshToken>,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -36,20 +38,20 @@ export class AuthService {
 
   async login(user: any) {
     const payload = { sub: user.id, role: user.role, name: user.name };
-
     const accessToken = this.jwtService.sign(payload);
-    const refreshTokenId = uuidv4();
+
+    const tokenId = uuidv4();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
     const refreshToken = this.jwtService.sign(
-      { sub: user.id, tokenId: refreshTokenId },
+      { sub: user.id, tokenId },
       { expiresIn: (this.configService.get<string>('jwt.refreshExpiry') || '7d') as any },
     );
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-    this.refreshTokens.set(refreshTokenId, {
-      userId: user.id,
-      expiresAt,
-    });
+    await this.refreshTokenRepo.save(
+      this.refreshTokenRepo.create({ userId: user.id, tokenId, expiresAt }),
+    );
 
     return {
       accessToken,
@@ -67,41 +69,52 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
+    let decoded: any;
     try {
-      const decoded = this.jwtService.verify(refreshToken);
-      const stored = this.refreshTokens.get(decoded.tokenId);
-
-      if (!stored || stored.userId !== decoded.sub || stored.expiresAt < new Date()) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      this.refreshTokens.delete(decoded.tokenId);
-
-      const user = await this.usersService.findById(decoded.sub);
-      if (!user || !user.isActive) {
-        throw new UnauthorizedException('User not found or inactive');
-      }
-
-      return this.login({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        agentCode: user.agentCode,
-        target: user.target,
-        dailyTarget: user.dailyTarget,
-      });
+      decoded = this.jwtService.verify(refreshToken);
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
+
+    const stored = await this.refreshTokenRepo.findOne({
+      where: { tokenId: decoded.tokenId, revoked: false },
+    });
+
+    if (!stored || stored.userId !== decoded.sub || stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    await this.refreshTokenRepo.update({ id: stored.id }, { revoked: true });
+
+    const user = await this.usersService.findById(decoded.sub);
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    return this.login({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      agentCode: user.agentCode,
+      target: user.target,
+      dailyTarget: user.dailyTarget,
+    });
   }
 
   async logout(refreshToken: string) {
     try {
       const decoded = this.jwtService.verify(refreshToken);
-      this.refreshTokens.delete(decoded.tokenId);
+      await this.refreshTokenRepo.update(
+        { tokenId: decoded.tokenId },
+        { revoked: true },
+      );
     } catch {
-      // Token already invalid, no-op
+      // Token already invalid — no-op
     }
+  }
+
+  async pruneExpiredTokens(): Promise<void> {
+    await this.refreshTokenRepo.delete({ expiresAt: LessThan(new Date()) });
   }
 }
